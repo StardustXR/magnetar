@@ -296,6 +296,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "eabb4a44450da02c90444cf74558da904edde8fb4e9035a9a6a4e15445af0bd7"
 
 [[package]]
+name = "hermit-abi"
+version = "0.1.19"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "62b467343b94ba476dcb2500d242dadbb39557df889310ac77c5d99100aaac33"
+dependencies = [
+ "libc",
+]
+
+[[package]]
 name = "iana-time-zone"
 version = "0.1.53"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -435,6 +444,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "578ede34cf02f8924ab9447f50c28075b4d3e5b269972345e7e0372b38c6cdcd"
 dependencies = [
  "autocfg",
+]
+
+[[package]]
+name = "num_cpus"
+version = "1.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f6058e64324c71e02bc2b150e4f3bc8286db6c83092132ffa3f6b1eab0f9def5"
+dependencies = [
+ "hermit-abi",
+ "libc",
 ]
 
 [[package]]
@@ -740,9 +759,9 @@ dependencies = [
 
 [[package]]
 name = "stardust-xr-fusion"
-version = "0.21.2"
+version = "0.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cd63282fffe75c9523a440a89fb0ad6f2ff87f37b286fd6b6193b3a64f9e4646"
+checksum = "ce1305463319add3ce6f9bd2864d79a3a836c752929f052743b8a1e90f3d62d8"
 dependencies = [
  "anyhow",
  "buildstructor",
@@ -764,9 +783,9 @@ dependencies = [
 
 [[package]]
 name = "stardust-xr-molecules"
-version = "0.4.1"
+version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3a953e379372935d9aec4620c857f1e041a526b5e680253913c313e66263361a"
+checksum = "59264c72fa87768563ba781264843b1412aaf3bdb4dcec19d7b1b15fbc3027a5"
 dependencies = [
  "color-rs",
  "flexbuffers",
@@ -776,6 +795,7 @@ dependencies = [
  "rustc-hash",
  "serde",
  "stardust-xr-fusion",
+ "tokio",
  "xkbcommon",
 ]
 
@@ -847,9 +867,9 @@ dependencies = [
 
 [[package]]
 name = "time"
-version = "0.1.44"
+version = "0.1.45"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6db9e6914ab8b1ae1c260a4ae7a49b6c5611b40328a735b21862567685e73255"
+checksum = "1b797afad3f312d1c66a56d11d0316f916356d11bd158fbc6ca6389ff6bf805a"
 dependencies = [
  "libc",
  "wasi 0.10.0+wasi-snapshot-preview1",
@@ -867,6 +887,8 @@ dependencies = [
  "libc",
  "memchr",
  "mio",
+ "num_cpus",
+ "parking_lot",
  "pin-project-lite",
  "signal-hook-registry",
  "socket2",

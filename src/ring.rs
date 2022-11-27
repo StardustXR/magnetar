@@ -24,7 +24,7 @@ pub struct Ring {
 }
 impl Ring {
 	pub fn new_from_point(parent: &Spatial, height: f32, radius: f32) -> Self {
-		let circle_points = circle(128, 1.0, 0.01, rgba!(100, 0, 255, 255));
+		let circle_points = circle(128, 1.0, 0.01, rgba!(0.392156863, 0.0, 1.0, 1.0));
 		let lines = Lines::builder()
 			.spatial_parent(parent)
 			.points(&circle_points)
