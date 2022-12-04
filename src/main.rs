@@ -11,11 +11,12 @@ async fn main() {
 		.await
 		.expect("Unable to connect to server");
 
-	let root_wrapper = client.wrap_root(Magnetar::new(&client));
-	root_wrapper.lock_inner().add_cell();
+	let mut root = Magnetar::new(&client);
+	root.add_cell();
+	let _root_wrapper = client.wrap_root(root);
 
 	tokio::select! {
-		e = event_loop => e.unwrap(),
 		e = tokio::signal::ctrl_c() => e.unwrap(),
+		e = event_loop => e.unwrap().unwrap(),
 	}
 }

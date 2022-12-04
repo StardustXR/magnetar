@@ -5,15 +5,16 @@ use rustc_hash::FxHashSet;
 use stardust_xr_molecules::fusion::{
 	client::LogicStepInfo,
 	fields::CylinderField,
+	node::NodeType,
 	spatial::{Spatial, Zone, ZoneHandler},
-	HandlerWrapper, WeakNodeRef,
+	HandlerWrapper,
 };
 use std::{f32::consts::PI, sync::Arc};
 
 pub struct Cell {
 	_root: Arc<Spatial>,
 	_field: Arc<CylinderField>,
-	zone: WeakNodeRef<Zone>,
+	zone: Zone,
 	pub active: bool,
 	queued_zoneables: FxHashSet<String>,
 	top_ring: Ring,
@@ -45,16 +46,17 @@ impl Cell {
 
 		let root_2 = root.clone();
 		let field_2 = field.clone();
-		Zone::create(&root_2, None, None, &*field_2, move |zone, _| Cell {
+		let zone = Zone::create(&root_2, None, None, &*field_2).unwrap();
+		let cell = Cell {
 			_root: root,
 			_field: field,
-			zone,
+			zone: zone.alias(),
 			active: false,
 			queued_zoneables: FxHashSet::default(),
 			top_ring,
 			bottom_ring,
-		})
-		.unwrap()
+		};
+		zone.wrap(cell).unwrap()
 	}
 
 	pub fn logic_step(&mut self, info: LogicStepInfo) {
@@ -64,27 +66,25 @@ impl Cell {
 			_ => false,
 		};
 		if self.active && !self.queued_zoneables.is_empty() {
-			self.zone.with_node(|zone| {
-				self.queued_zoneables
-					.drain()
-					.for_each(|zoneable| zone.capture(&zoneable).unwrap());
-			});
+			self.queued_zoneables
+				.drain()
+				.for_each(|zoneable| self.zone.capture(&zoneable).unwrap());
 		}
 	}
 }
 impl ZoneHandler for Cell {
-	fn enter(&mut self, zone: &Zone, uid: &str, _spatial: &Spatial) {
+	fn enter(&mut self, uid: &str, _spatial: Spatial) {
 		dbg!(self.active);
 		dbg!(uid);
 		if self.active {
-			zone.capture(uid).unwrap();
+			self.zone.capture(uid).unwrap();
 		} else {
 			self.queued_zoneables.insert(uid.to_string());
 		}
 	}
-	fn capture(&mut self, _zone: &Zone, _uid: &str, _spatial: &Spatial) {}
-	fn release(&mut self, _zone: &Zone, _uid: &str) {}
-	fn leave(&mut self, _zone: &Zone, uid: &str) {
+	fn capture(&mut self, _uid: &str, _spatial: Spatial) {}
+	fn release(&mut self, _uid: &str) {}
+	fn leave(&mut self, uid: &str) {
 		self.queued_zoneables.remove(uid);
 	}
 }

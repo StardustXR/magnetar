@@ -43,10 +43,10 @@ impl Magnetar {
 			.build()
 			.unwrap();
 
-		let input_handler = InputHandler::create(&client.get_root(), None, None, &field, |_, _| {
-			InputActionHandler::new(())
-		})
-		.unwrap();
+		let input_handler = InputHandler::create(&client.get_root(), None, None, &field)
+			.unwrap()
+			.wrap(InputActionHandler::new(()))
+			.unwrap();
 		let hover_input_action =
 			BaseInputAction::new(false, |input_data, _| input_data.distance.abs() < 0.05);
 		let grab_input_action = SingleActorAction::new(true, Magnetar::grab_action, true);
@@ -76,7 +76,7 @@ impl Magnetar {
 		input_data
 			.datamap
 			.with_data(|data| match &input_data.input {
-				InputDataType::Hand(_) => data.idx("grabStrength").as_f32() > 0.8,
+				InputDataType::Hand(_) => data.idx("grab_strength").as_f32() > 0.8,
 				_ => data.idx("grab").as_f32() > 0.9,
 			})
 	}
@@ -84,10 +84,10 @@ impl Magnetar {
 impl LifeCycleHandler for Magnetar {
 	fn logic_step(&mut self, info: LogicStepInfo) {
 		for cell in &self.cells {
-			cell.lock_inner().logic_step(info);
+			cell.lock_wrapped().logic_step(info);
 		}
 
-		self.input_handler.lock_inner().update_actions([
+		self.input_handler.lock_wrapped().update_actions([
 			self.hover_input_action.type_erase(),
 			self.grab_input_action.type_erase(),
 		]);
@@ -95,7 +95,7 @@ impl LifeCycleHandler for Magnetar {
 
 		if self.grab_input_action.actor_started() {
 			for cell in &self.cells {
-				cell.lock_inner().active = false;
+				cell.lock_wrapped().active = false;
 			}
 		}
 		if self.grab_input_action.actor_acting() {
@@ -113,7 +113,7 @@ impl LifeCycleHandler for Magnetar {
 		}
 		if self.grab_input_action.actor_stopped() {
 			for cell in &self.cells {
-				cell.lock_inner().active = true;
+				cell.lock_wrapped().active = true;
 			}
 			self.y_pos = self.y_pos_tmp;
 		}
