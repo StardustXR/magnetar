@@ -1,11 +1,12 @@
+use std::f32::consts::PI;
+
 use color::rgba;
 use glam::Quat;
 use mint::Vector3;
 use stardust_xr_molecules::{
-	fusion::{client::LogicStepInfo, drawable::Lines, spatial::Spatial},
+	fusion::{client::LogicStepInfo, core::values::Transform, drawable::Lines, spatial::Spatial},
 	lines::circle,
 };
-use std::f32::consts::PI;
 use tween::{QuadIn, QuadOut, Tweener};
 
 pub enum State {
@@ -25,14 +26,16 @@ pub struct Ring {
 impl Ring {
 	pub fn new_from_point(parent: &Spatial, height: f32, radius: f32) -> Self {
 		let circle_points = circle(128, 1.0, 0.01, rgba!(0.392156863, 0.0, 1.0, 1.0));
-		let lines = Lines::builder()
-			.spatial_parent(parent)
-			.points(&circle_points)
-			.rotation(Quat::from_rotation_x(PI * 0.5))
-			.scale(Vector3::from([0.02; 3]))
-			.cyclic(true)
-			.build()
-			.unwrap();
+		let lines = Lines::create(
+			parent,
+			Transform::from_rotation_scale(
+				Quat::from_rotation_x(PI * 0.5),
+				Vector3::from([0.02; 3]),
+			),
+			&circle_points,
+			true,
+		)
+		.unwrap();
 
 		let state = State::Rezzing {
 			rez_height_tweener: Tweener::new(QuadIn::new(0.0..=height, 0.25)),

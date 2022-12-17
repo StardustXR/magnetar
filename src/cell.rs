@@ -1,19 +1,19 @@
 use crate::ring::{self, Ring};
 use glam::Quat;
-use mint::Vector3;
 use rustc_hash::FxHashSet;
 use stardust_xr_molecules::fusion::{
 	client::LogicStepInfo,
+	core::values::Transform,
 	fields::CylinderField,
 	node::NodeType,
 	spatial::{Spatial, Zone, ZoneHandler},
 	HandlerWrapper,
 };
-use std::{f32::consts::PI, sync::Arc};
+use std::f32::consts::PI;
 
 pub struct Cell {
-	_root: Arc<Spatial>,
-	_field: Arc<CylinderField>,
+	_root: Spatial,
+	_field: CylinderField,
 	zone: Zone,
 	pub active: bool,
 	queued_zoneables: FxHashSet<String>,
@@ -22,31 +22,21 @@ pub struct Cell {
 }
 impl Cell {
 	pub fn new(parent: &Spatial, height: f32) -> HandlerWrapper<Zone, Self> {
-		let root = Arc::new(
-			Spatial::builder()
-				.spatial_parent(parent)
-				.position(Vector3::from([0.0, height, 0.0]))
-				.zoneable(false)
-				.build()
-				.unwrap(),
-		);
+		let root =
+			Spatial::create(parent, Transform::from_position([0.0, height, 0.0]), false).unwrap();
 
-		let field = Arc::new(
-			CylinderField::builder()
-				.spatial_parent(&root)
-				.rotation(Quat::from_rotation_x(PI * 0.5))
-				.length(1.0)
-				.radius(1.0)
-				.build()
-				.unwrap(),
-		);
+		let field = CylinderField::create(
+			&root,
+			Transform::from_rotation(Quat::from_rotation_x(PI * 0.5)),
+			1.0,
+			1.0,
+		)
+		.unwrap();
 
 		let top_ring = Ring::new_from_point(&root, 0.5, 1.0);
 		let bottom_ring = Ring::new_from_point(&root, -0.5, 1.0);
 
-		let root_2 = root.clone();
-		let field_2 = field.clone();
-		let zone = Zone::create(&root_2, None, None, &*field_2).unwrap();
+		let zone = Zone::create(&root, Transform::default(), &field).unwrap();
 		let cell = Cell {
 			_root: root,
 			_field: field,

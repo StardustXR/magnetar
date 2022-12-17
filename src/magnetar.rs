@@ -4,6 +4,7 @@ use mint::Vector3;
 use stardust_xr_molecules::{
 	fusion::{
 		client::{Client, LifeCycleHandler, LogicStepInfo},
+		core::values::Transform,
 		fields::CylinderField,
 		input::{
 			action::{BaseInputAction, InputAction, InputActionHandler},
@@ -29,21 +30,17 @@ pub struct Magnetar {
 }
 impl Magnetar {
 	pub fn new(client: &Client) -> Self {
-		let root = Spatial::builder()
-			.spatial_parent(client.get_root())
-			.zoneable(false)
-			.build()
-			.unwrap();
+		let root = Spatial::create(client.get_root(), Transform::default(), false).unwrap();
 
-		let field = CylinderField::builder()
-			.spatial_parent(&root)
-			.rotation(Quat::from_rotation_x(PI * 0.5))
-			.length(0.0)
-			.radius(1.0)
-			.build()
-			.unwrap();
+		let field = CylinderField::create(
+			&root,
+			Transform::from_rotation(Quat::from_rotation_x(PI * 0.5)),
+			0.0,
+			1.0,
+		)
+		.unwrap();
 
-		let input_handler = InputHandler::create(&client.get_root(), None, None, &field)
+		let input_handler = InputHandler::create(&client.get_root(), Transform::default(), &field)
 			.unwrap()
 			.wrap(InputActionHandler::new(()))
 			.unwrap();
