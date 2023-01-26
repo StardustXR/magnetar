@@ -1,8 +1,8 @@
 use crate::ring::{self, Ring};
 use glam::Quat;
-use rustc_hash::FxHashSet;
+use rustc_hash::FxHashMap;
 use stardust_xr_molecules::fusion::{
-	client::LogicStepInfo,
+	client::FrameInfo,
 	core::values::Transform,
 	fields::CylinderField,
 	node::NodeType,
@@ -12,11 +12,11 @@ use stardust_xr_molecules::fusion::{
 use std::f32::consts::PI;
 
 pub struct Cell {
-	_root: Spatial,
+	root: Spatial,
 	_field: CylinderField,
 	zone: Zone,
 	pub active: bool,
-	queued_zoneables: FxHashSet<String>,
+	queued_zoneables: FxHashMap<String, Spatial>,
 	top_ring: Ring,
 	bottom_ring: Ring,
 }
@@ -38,18 +38,19 @@ impl Cell {
 
 		let zone = Zone::create(&root, Transform::default(), &field).unwrap();
 		let cell = Cell {
-			_root: root,
+			root,
 			_field: field,
 			zone: zone.alias(),
 			active: false,
-			queued_zoneables: FxHashSet::default(),
+			queued_zoneables: FxHashMap::default(),
 			top_ring,
 			bottom_ring,
 		};
 		zone.wrap(cell).unwrap()
 	}
 
-	pub fn logic_step(&mut self, info: LogicStepInfo) {
+	pub fn logic_step(&mut self, info: FrameInfo) {
+		self.zone.update().unwrap();
 		self.top_ring.logic_step(info);
 		self.active = match self.bottom_ring.logic_step(info) {
 			ring::State::Idle => true,
@@ -58,23 +59,28 @@ impl Cell {
 		if self.active && !self.queued_zoneables.is_empty() {
 			self.queued_zoneables
 				.drain()
-				.for_each(|zoneable| self.zone.capture(&zoneable).unwrap());
+				.for_each(|(_uid, zoneable)| self.zone.capture(&zoneable).unwrap());
 		}
 	}
 }
 impl ZoneHandler for Cell {
-	fn enter(&mut self, uid: &str, _spatial: Spatial) {
-		dbg!(self.active);
-		dbg!(uid);
+	fn enter(&mut self, uid: &str, spatial: Spatial) {
+		println!("Entered {}", uid);
 		if self.active {
-			self.zone.capture(uid).unwrap();
+			self.zone.capture(&spatial).unwrap();
 		} else {
-			self.queued_zoneables.insert(uid.to_string());
+			self.queued_zoneables.insert(uid.to_string(), spatial);
 		}
 	}
-	fn capture(&mut self, _uid: &str, _spatial: Spatial) {}
-	fn release(&mut self, _uid: &str) {}
+	fn capture(&mut self, uid: &str, spatial: Spatial) {
+		println!("Captured {}", uid);
+		spatial.set_spatial_parent_in_place(&self.root).unwrap();
+	}
+	fn release(&mut self, uid: &str) {
+		println!("Released {}", uid);
+	}
 	fn leave(&mut self, uid: &str) {
+		println!("Left {}", uid);
 		self.queued_zoneables.remove(uid);
 	}
 }

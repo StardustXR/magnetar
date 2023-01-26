@@ -1,9 +1,11 @@
-use crate::cell::Cell;
+use crate::{cell::Cell, grab_circle::GrabCircle};
+use color_eyre::eyre::Result;
 use glam::Quat;
 use mint::Vector3;
+use rustc_hash::FxHashMap;
 use stardust_xr_molecules::{
 	fusion::{
-		client::{Client, LifeCycleHandler, LogicStepInfo},
+		client::{Client, FrameInfo, RootHandler},
 		core::values::Transform,
 		fields::CylinderField,
 		input::{
@@ -24,40 +26,42 @@ pub struct Magnetar {
 	y_pos: f32,
 	y_offset: f32,
 	input_handler: HandlerWrapper<InputHandler, InputActionHandler<()>>,
+	always_input_action: BaseInputAction<()>,
 	hover_input_action: BaseInputAction<()>,
 	grab_input_action: SingleActorAction<()>,
 	cells: Vec<HandlerWrapper<Zone, Cell>>,
+	grab_circles: FxHashMap<String, GrabCircle>,
 }
 impl Magnetar {
-	pub fn new(client: &Client) -> Self {
-		let root = Spatial::create(client.get_root(), Transform::default(), false).unwrap();
+	pub fn new(client: &Client) -> Result<Self> {
+		let root = Spatial::create(client.get_root(), Transform::default(), false)?;
 
 		let field = CylinderField::create(
 			&root,
 			Transform::from_rotation(Quat::from_rotation_x(PI * 0.5)),
 			0.0,
 			1.0,
-		)
-		.unwrap();
+		)?;
 
-		let input_handler = InputHandler::create(&client.get_root(), Transform::default(), &field)
-			.unwrap()
-			.wrap(InputActionHandler::new(()))
-			.unwrap();
+		let input_handler = InputHandler::create(&client.get_root(), Transform::default(), &field)?
+			.wrap(InputActionHandler::new(()))?;
+		let always_input_action = BaseInputAction::new(false, |_, _| true);
 		let hover_input_action =
 			BaseInputAction::new(false, |input_data, _| input_data.distance.abs() < 0.05);
 		let grab_input_action = SingleActorAction::new(true, Magnetar::grab_action, true);
-		Magnetar {
+		Ok(Magnetar {
 			root,
 			field,
 			y_pos_tmp: 0.0,
 			y_pos: 0.0,
 			y_offset: 0.0,
 			input_handler,
+			always_input_action,
 			hover_input_action,
 			grab_input_action,
 			cells: vec![],
-		}
+			grab_circles: FxHashMap::default(),
+		})
 	}
 	pub fn add_cell(&mut self) {
 		self.cells
@@ -77,18 +81,41 @@ impl Magnetar {
 				_ => data.idx("grab").as_f32() > 0.9,
 			})
 	}
+
+	fn update_grab_circles(&mut self) {
+		for input in &self.always_input_action.started_acting {
+			self.grab_circles.insert(
+				input.uid.clone(),
+				GrabCircle::new(self.input_handler.node(), 1.0),
+			);
+		}
+		for input in &self.always_input_action.actively_acting {
+			let grabbing = self.grab_input_action.actor_acting()
+				&& self.grab_input_action.actor().as_ref().unwrap().uid == input.uid;
+			self.grab_circles
+				.get(&input.uid)
+				.unwrap()
+				.update(input, None, grabbing);
+		}
+		for input in &self.always_input_action.stopped_acting {
+			self.grab_circles.remove(&input.uid);
+		}
+	}
 }
-impl LifeCycleHandler for Magnetar {
-	fn logic_step(&mut self, info: LogicStepInfo) {
+impl RootHandler for Magnetar {
+	fn frame(&mut self, info: FrameInfo) {
 		for cell in &self.cells {
 			cell.lock_wrapped().logic_step(info);
 		}
 
 		self.input_handler.lock_wrapped().update_actions([
+			self.always_input_action.type_erase(),
 			self.hover_input_action.type_erase(),
 			self.grab_input_action.type_erase(),
 		]);
 		self.grab_input_action.update(&mut self.hover_input_action);
+
+		self.update_grab_circles();
 
 		if self.grab_input_action.actor_started() {
 			for cell in &self.cells {
