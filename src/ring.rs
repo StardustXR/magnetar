@@ -3,10 +3,10 @@ use std::f32::consts::PI;
 use color::rgba;
 use glam::Quat;
 use mint::Vector3;
-use stardust_xr_molecules::{
-	fusion::{client::FrameInfo, core::values::Transform, drawable::Lines, spatial::Spatial},
-	lines::circle,
+use stardust_xr_fusion::{
+	client::FrameInfo, core::values::Transform, drawable::Lines, spatial::Spatial,
 };
+use stardust_xr_molecules::lines::circle;
 use tween::{QuadIn, QuadOut, Tweener};
 
 pub enum State {

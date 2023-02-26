@@ -3,20 +3,18 @@ use color_eyre::eyre::Result;
 use glam::Quat;
 use mint::Vector3;
 use rustc_hash::FxHashMap;
-use stardust_xr_molecules::{
-	fusion::{
-		client::{Client, FrameInfo, RootHandler},
-		core::values::Transform,
-		fields::CylinderField,
-		input::{
-			action::{BaseInputAction, InputAction, InputActionHandler},
-			InputData, InputDataType, InputHandler,
-		},
-		spatial::{Spatial, Zone},
-		HandlerWrapper,
+use stardust_xr_fusion::{
+	client::{Client, FrameInfo, RootHandler},
+	core::values::Transform,
+	fields::CylinderField,
+	input::{
+		action::{BaseInputAction, InputAction, InputActionHandler},
+		InputData, InputDataType, InputHandler,
 	},
-	SingleActorAction,
+	spatial::{Spatial, Zone},
+	HandlerWrapper,
 };
+use stardust_xr_molecules::SingleActorAction;
 use std::f32::consts::PI;
 
 pub struct Magnetar {

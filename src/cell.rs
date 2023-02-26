@@ -1,7 +1,7 @@
 use crate::ring::{self, Ring};
 use glam::Quat;
 use rustc_hash::FxHashMap;
-use stardust_xr_molecules::fusion::{
+use stardust_xr_fusion::{
 	client::FrameInfo,
 	core::values::Transform,
 	fields::CylinderField,

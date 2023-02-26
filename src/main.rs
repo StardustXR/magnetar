@@ -5,7 +5,7 @@ pub mod ring;
 
 use color_eyre::eyre::Result;
 use magnetar::Magnetar;
-use stardust_xr_molecules::fusion::client::Client;
+use stardust_xr_fusion::client::Client;
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<()> {

@@ -1,14 +1,12 @@
 use color::rgba;
 use glam::{vec2, Quat};
 use map_range::MapRange;
-use stardust_xr_molecules::{
-	fusion::{
-		core::values::Transform,
-		drawable::Lines,
-		input::{InputData, InputDataType, InputHandler},
-	},
-	lines::circle,
+use stardust_xr_fusion::{
+	core::values::Transform,
+	drawable::Lines,
+	input::{InputData, InputDataType, InputHandler},
 };
+use stardust_xr_molecules::lines::circle;
 
 pub struct GrabCircle {
 	lines: Lines,
