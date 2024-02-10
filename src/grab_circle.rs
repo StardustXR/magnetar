@@ -1,12 +1,14 @@
-use color::rgba;
+use std::f32::consts::PI;
+
 use glam::{vec2, Quat};
 use map_range::MapRange;
 use stardust_xr_fusion::{
-	core::values::Transform,
-	drawable::Lines,
+	core::values::rgba_linear,
+	drawable::{Line, Lines},
 	input::{InputData, InputDataType, InputHandler},
+	spatial::{SpatialAspect, Transform},
 };
-use stardust_xr_molecules::lines::circle;
+use stardust_xr_molecules::lines::{circle, make_line_points};
 
 pub struct GrabCircle {
 	lines: Lines,
@@ -14,11 +16,19 @@ pub struct GrabCircle {
 }
 impl GrabCircle {
 	pub fn new(input_handler: &InputHandler, radius: f32) -> Self {
-		let points = circle(64, 0.5, 0.005, rgba!(1.0, 1.0, 1.0, 1.0));
-		GrabCircle {
-			lines: Lines::create(input_handler, Transform::default(), &points, true).unwrap(),
-			radius,
-		}
+		let circle_points = circle(128, 0.0, 0.5);
+		let circle_points =
+			make_line_points(circle_points, 0.005, rgba_linear!(1.0, 1.0, 1.0, 1.0));
+		let lines = Lines::create(
+			input_handler,
+			Transform::from_rotation_scale(Quat::from_rotation_x(PI * 0.5), [0.02; 3]),
+			&[Line {
+				points: circle_points,
+				cyclic: true,
+			}],
+		)
+		.unwrap();
+		GrabCircle { lines, radius }
 	}
 
 	pub fn update(
@@ -47,10 +57,9 @@ impl GrabCircle {
 		};
 
 		self.lines
-			.set_transform(
-				None,
-				Transform::from_position_rotation_scale(position, rotation, [scale; 3]),
-			)
+			.set_local_transform(Transform::from_translation_rotation_scale(
+				position, rotation, [scale; 3],
+			))
 			.unwrap();
 	}
 }

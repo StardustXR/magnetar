@@ -3,10 +3,9 @@ use glam::Quat;
 use rustc_hash::FxHashMap;
 use stardust_xr_fusion::{
 	client::FrameInfo,
-	core::values::Transform,
 	fields::CylinderField,
 	node::NodeType,
-	spatial::{Spatial, Zone, ZoneHandler},
+	spatial::{Spatial, SpatialAspect, Transform, Zone, ZoneAspect, ZoneHandler},
 	HandlerWrapper,
 };
 use std::f32::consts::PI;
@@ -16,14 +15,19 @@ pub struct Cell {
 	_field: CylinderField,
 	zone: Zone,
 	pub active: bool,
-	queued_zoneables: FxHashMap<String, Spatial>,
+	zoneables: FxHashMap<String, Spatial>,
+	queued_zoneables: Vec<Spatial>,
 	top_ring: Ring,
 	bottom_ring: Ring,
 }
 impl Cell {
 	pub fn new(parent: &Spatial, height: f32) -> HandlerWrapper<Zone, Self> {
-		let root =
-			Spatial::create(parent, Transform::from_position([0.0, height, 0.0]), false).unwrap();
+		let root = Spatial::create(
+			parent,
+			Transform::from_translation([0.0, height, 0.0]),
+			false,
+		)
+		.unwrap();
 
 		let field = CylinderField::create(
 			&root,
@@ -36,13 +40,14 @@ impl Cell {
 		let top_ring = Ring::new_from_point(&root, 0.5, 1.0);
 		let bottom_ring = Ring::new_from_point(&root, -0.5, 1.0);
 
-		let zone = Zone::create(&root, Transform::default(), &field).unwrap();
+		let zone = Zone::create(&root, Transform::identity(), &field).unwrap();
 		let cell = Cell {
 			root,
 			_field: field,
 			zone: zone.alias(),
 			active: false,
-			queued_zoneables: FxHashMap::default(),
+			zoneables: FxHashMap::default(),
+			queued_zoneables: Vec::new(),
 			top_ring,
 			bottom_ring,
 		};
@@ -58,29 +63,34 @@ impl Cell {
 		};
 		if self.active && !self.queued_zoneables.is_empty() {
 			self.queued_zoneables
-				.drain()
-				.for_each(|(_uid, zoneable)| self.zone.capture(&zoneable).unwrap());
+				.drain(..)
+				.for_each(|zoneable| self.zone.capture(&zoneable).unwrap());
 		}
 	}
 }
 impl ZoneHandler for Cell {
-	fn enter(&mut self, uid: &str, spatial: Spatial) {
+	fn enter(&mut self, uid: String, spatial: Spatial) {
 		println!("Entered {}", uid);
 		if self.active {
 			self.zone.capture(&spatial).unwrap();
 		} else {
-			self.queued_zoneables.insert(uid.to_string(), spatial);
+			self.queued_zoneables.push(spatial.alias());
 		}
+		self.zoneables.insert(uid, spatial);
 	}
-	fn capture(&mut self, uid: &str, spatial: Spatial) {
+	fn capture(&mut self, uid: String) {
 		println!("Captured {}", uid);
-		spatial.set_spatial_parent_in_place(&self.root).unwrap();
+		self.zoneables
+			.get(&uid)
+			.unwrap()
+			.set_spatial_parent_in_place(&self.root)
+			.unwrap();
 	}
-	fn release(&mut self, uid: &str) {
+	fn release(&mut self, uid: String) {
 		println!("Released {}", uid);
 	}
-	fn leave(&mut self, uid: &str) {
+	fn leave(&mut self, uid: String) {
 		println!("Left {}", uid);
-		self.queued_zoneables.remove(uid);
+		self.zoneables.remove(&uid);
 	}
 }

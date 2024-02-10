@@ -1,20 +1,15 @@
 use crate::{cell::Cell, grab_circle::GrabCircle};
 use color_eyre::eyre::Result;
 use glam::Quat;
-use mint::Vector3;
 use rustc_hash::FxHashMap;
 use stardust_xr_fusion::{
-	client::{Client, FrameInfo, RootHandler},
-	core::values::Transform,
-	fields::CylinderField,
-	input::{
-		action::{BaseInputAction, InputAction, InputActionHandler},
-		InputData, InputDataType, InputHandler,
-	},
-	spatial::{Spatial, Zone},
+	client::{Client, ClientState, FrameInfo, RootHandler},
+	fields::{CylinderField, CylinderFieldAspect},
+	input::{InputData, InputDataType, InputHandler},
+	spatial::{Spatial, SpatialAspect, Transform, Zone},
 	HandlerWrapper,
 };
-use stardust_xr_molecules::SingleActorAction;
+use stardust_xr_molecules::input_action::{BaseInputAction, InputActionHandler, SingleActorAction};
 use std::f32::consts::PI;
 
 pub struct Magnetar {
@@ -32,7 +27,7 @@ pub struct Magnetar {
 }
 impl Magnetar {
 	pub fn new(client: &Client) -> Result<Self> {
-		let root = Spatial::create(client.get_root(), Transform::default(), false)?;
+		let root = Spatial::create(client.get_root(), Transform::identity(), false)?;
 
 		let field = CylinderField::create(
 			&root,
@@ -41,8 +36,10 @@ impl Magnetar {
 			1.0,
 		)?;
 
-		let input_handler = InputHandler::create(&client.get_root(), Transform::default(), &field)?
-			.wrap(InputActionHandler::new(()))?;
+		let input_handler = InputActionHandler::wrap(
+			InputHandler::create(client.get_root(), Transform::identity(), &field)?,
+			(),
+		)?;
 		let always_input_action = BaseInputAction::new(false, |_, _| true);
 		let hover_input_action =
 			BaseInputAction::new(false, |input_data, _| input_data.distance.abs() < 0.05);
@@ -66,7 +63,11 @@ impl Magnetar {
 			.push(Cell::new(&self.root, -(self.cells.len() as f32)));
 		let cells_height = self.cells.len() as f32;
 		self.field
-			.set_position(None, Vector3::from([0.0, cells_height * 0.5 - 0.5, 0.0]))
+			.set_local_transform(Transform::from_translation([
+				0.0,
+				cells_height * 0.5 - 0.5,
+				0.0,
+			]))
 			.unwrap();
 		self.field.set_size(cells_height, 1.0).unwrap();
 	}
@@ -87,7 +88,7 @@ impl Magnetar {
 				GrabCircle::new(self.input_handler.node(), 1.0),
 			);
 		}
-		for input in &self.always_input_action.actively_acting {
+		for input in &self.always_input_action.currently_acting {
 			let grabbing = self.grab_input_action.actor_acting()
 				&& self.grab_input_action.actor().as_ref().unwrap().uid == input.uid;
 			self.grab_circles
@@ -107,11 +108,12 @@ impl RootHandler for Magnetar {
 		}
 
 		self.input_handler.lock_wrapped().update_actions([
-			self.always_input_action.type_erase(),
-			self.hover_input_action.type_erase(),
-			self.grab_input_action.type_erase(),
+			&mut self.always_input_action,
+			&mut self.hover_input_action,
+			self.grab_input_action.base_mut(),
 		]);
-		self.grab_input_action.update(&mut self.hover_input_action);
+		self.grab_input_action
+			.update(Some(&mut self.hover_input_action));
 
 		self.update_grab_circles();
 
@@ -130,7 +132,7 @@ impl RootHandler for Magnetar {
 			self.y_pos_tmp = y - self.y_offset + self.y_pos;
 
 			self.root
-				.set_position(None, Vector3::from([0.0, self.y_pos_tmp, 0.0]))
+				.set_local_transform(Transform::from_translation([0.0, self.y_pos_tmp, 0.0]))
 				.unwrap();
 		}
 		if self.grab_input_action.actor_stopped() {
@@ -142,7 +144,7 @@ impl RootHandler for Magnetar {
 
 		if let Some(scroll) = self
 			.hover_input_action
-			.actively_acting
+			.currently_acting
 			.iter()
 			.map(|input| {
 				input
@@ -158,9 +160,13 @@ impl RootHandler for Magnetar {
 			self.y_pos_tmp += scroll;
 
 			self.root
-				.set_position(None, Vector3::from([0.0, self.y_pos_tmp, 0.0]))
+				.set_local_transform(Transform::from_translation([0.0, self.y_pos_tmp, 0.0]))
 				.unwrap();
 		}
+	}
+
+	fn save_state(&mut self) -> ClientState {
+		ClientState::default()
 	}
 }
 

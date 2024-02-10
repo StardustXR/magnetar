@@ -1,12 +1,14 @@
 use std::f32::consts::PI;
 
-use color::rgba;
 use glam::Quat;
 use mint::Vector3;
 use stardust_xr_fusion::{
-	client::FrameInfo, core::values::Transform, drawable::Lines, spatial::Spatial,
+	client::FrameInfo,
+	core::values::rgba_linear,
+	drawable::{Line, Lines},
+	spatial::{Spatial, SpatialAspect, Transform},
 };
-use stardust_xr_molecules::lines::circle;
+use stardust_xr_molecules::lines::{circle, make_line_points};
 use tween::{QuadIn, QuadOut, Tweener};
 
 pub enum State {
@@ -25,15 +27,22 @@ pub struct Ring {
 }
 impl Ring {
 	pub fn new_from_point(parent: &Spatial, height: f32, radius: f32) -> Self {
-		let circle_points = circle(128, 1.0, 0.01, rgba!(0.392156863, 0.0, 1.0, 1.0));
+		let circle_points = circle(128, 0.0, 1.0);
+		let circle_points = make_line_points(
+			circle_points,
+			0.01,
+			rgba_linear!(0.392156863, 0.0, 1.0, 1.0),
+		);
 		let lines = Lines::create(
 			parent,
 			Transform::from_rotation_scale(
 				Quat::from_rotation_x(PI * 0.5),
 				Vector3::from([0.02; 3]),
 			),
-			&circle_points,
-			true,
+			&[Line {
+				points: circle_points,
+				cyclic: true,
+			}],
 		)
 		.unwrap();
 
@@ -51,10 +60,14 @@ impl Ring {
 			} => {
 				if !rez_height_tweener.is_finished() {
 					let height = rez_height_tweener.move_by(info.delta);
-					let _ = self.lines.set_position(None, [0.0, height, 0.0]);
+					let _ = self
+						.lines
+						.set_local_transform(Transform::from_translation([0.0, height, 0.0]));
 				} else if !rez_scale_tweener.is_finished() {
 					let scale = rez_scale_tweener.move_by(info.delta);
-					let _ = self.lines.set_scale(None, [scale; 3]);
+					let _ = self
+						.lines
+						.set_local_transform(Transform::from_scale([scale; 3]));
 				} else {
 					self.state = State::Idle
 				}

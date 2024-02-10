@@ -7,12 +7,17 @@ edition = "2021"
 
 [dependencies]
 color-eyre = "0.6.2"
-color-rs = "0.7.1"
-glam = { version = "0.23.0", features = ["mint"] }
-map-range = "0.1.1"
+glam = { version = "0.25.0", features = ["mint"] }
+map-range = "0.1.2"
 mint = "0.5.9"
 rustc-hash = "1.1.0"
-stardust-xr-molecules = "0.23.0"
-stardust-xr-fusion = "0.38.1"
-tokio = { version = "1.22.0", default-features = false, features = ["rt"] }
+tokio = { version = "1.36.0", default-features = false, features = ["rt"] }
 tween = { version = "2.0.0", features = ["glam"] }
+
+[dependencies.stardust-xr-fusion]
+git = "https://github.com/StardustXR/core.git"
+# path = "../../core/fusion"
+
+[dependencies.stardust-xr-molecules]
+git = "https://github.com/StardustXR/molecules.git"
+# path = "../../molecules"
