@@ -5,10 +5,10 @@ use mint::Vector3;
 use stardust_xr_fusion::{
 	client::FrameInfo,
 	core::values::rgba_linear,
-	drawable::{Line, Lines},
+	drawable::Lines,
 	spatial::{Spatial, SpatialAspect, Transform},
 };
-use stardust_xr_molecules::lines::{circle, make_line_points};
+use stardust_xr_molecules::lines::{circle, LineExt};
 use tween::{QuadIn, QuadOut, Tweener};
 
 pub enum State {
@@ -27,22 +27,17 @@ pub struct Ring {
 }
 impl Ring {
 	pub fn new_from_point(parent: &Spatial, height: f32, radius: f32) -> Self {
-		let circle_points = circle(128, 0.0, 1.0);
-		let circle_points = make_line_points(
-			circle_points,
-			0.01,
-			rgba_linear!(0.392156863, 0.0, 1.0, 1.0),
-		);
+		let circle =
+			circle(128, 0.0, 1.0)
+				.thickness(0.01)
+				.color(rgba_linear!(0.392156863, 0.0, 1.0, 1.0));
 		let lines = Lines::create(
 			parent,
 			Transform::from_rotation_scale(
 				Quat::from_rotation_x(PI * 0.5),
 				Vector3::from([0.02; 3]),
 			),
-			&[Line {
-				points: circle_points,
-				cyclic: true,
-			}],
+			&[circle],
 		)
 		.unwrap();
 

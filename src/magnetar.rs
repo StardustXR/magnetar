@@ -166,7 +166,7 @@ impl RootHandler for Magnetar {
 	}
 
 	fn save_state(&mut self) -> ClientState {
-		ClientState::default()
+		ClientState::from_root(&self.root)
 	}
 }
 

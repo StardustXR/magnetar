@@ -4,11 +4,11 @@ use glam::{vec2, Quat};
 use map_range::MapRange;
 use stardust_xr_fusion::{
 	core::values::rgba_linear,
-	drawable::{Line, Lines},
+	drawable::Lines,
 	input::{InputData, InputDataType, InputHandler},
 	spatial::{SpatialAspect, Transform},
 };
-use stardust_xr_molecules::lines::{circle, make_line_points};
+use stardust_xr_molecules::lines::{circle, LineExt};
 
 pub struct GrabCircle {
 	lines: Lines,
@@ -16,16 +16,13 @@ pub struct GrabCircle {
 }
 impl GrabCircle {
 	pub fn new(input_handler: &InputHandler, radius: f32) -> Self {
-		let circle_points = circle(128, 0.0, 0.5);
-		let circle_points =
-			make_line_points(circle_points, 0.005, rgba_linear!(1.0, 1.0, 1.0, 1.0));
+		let circle = circle(128, 0.0, 0.5)
+			.thickness(0.005)
+			.color(rgba_linear!(1.0, 1.0, 1.0, 1.0));
 		let lines = Lines::create(
 			input_handler,
 			Transform::from_rotation_scale(Quat::from_rotation_x(PI * 0.5), [0.02; 3]),
-			&[Line {
-				points: circle_points,
-				cyclic: true,
-			}],
+			&[circle],
 		)
 		.unwrap();
 		GrabCircle { lines, radius }
