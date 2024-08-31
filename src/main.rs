@@ -5,7 +5,7 @@ pub mod ring;
 
 use color_eyre::eyre::Result;
 use magnetar::Magnetar;
-use stardust_xr_fusion::client::Client;
+use stardust_xr_fusion::{client::Client, node::NodeType, root::RootAspect};
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<()> {
@@ -15,7 +15,7 @@ async fn main() -> Result<()> {
 
 	let mut root = Magnetar::new(&client)?;
 	root.add_cell();
-	let _root_wrapper = client.wrap_root(root)?;
+	let _root_wrapper = client.get_root().alias().wrap(root)?;
 
 	tokio::select! {
 		e = tokio::signal::ctrl_c() => e?,

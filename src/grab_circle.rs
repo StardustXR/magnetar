@@ -3,7 +3,7 @@ use std::f32::consts::PI;
 use glam::{vec2, Quat};
 use map_range::MapRange;
 use stardust_xr_fusion::{
-	core::values::rgba_linear,
+	core::values::color::rgba_linear,
 	drawable::Lines,
 	input::{InputData, InputDataType, InputHandler},
 	spatial::{SpatialAspect, Transform},
@@ -42,7 +42,7 @@ impl GrabCircle {
 		let interact_direction = vec2(interact_point.x, interact_point.z).normalize_or_zero();
 		let xz_position = interact_direction * self.radius;
 		let position = [xz_position.x, interact_point.y, xz_position.y];
-		let rotation = Quat::from_rotation_y(-vec2(0.0, 1.0).angle_between(interact_direction));
+		let rotation = Quat::from_rotation_y(-vec2(0.0, 1.0).angle_to(interact_direction));
 		let scale = if !grabbing {
 			input_data
 				.distance

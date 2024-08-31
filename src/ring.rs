@@ -3,9 +3,9 @@ use std::f32::consts::PI;
 use glam::Quat;
 use mint::Vector3;
 use stardust_xr_fusion::{
-	client::FrameInfo,
-	core::values::rgba_linear,
+	core::values::color::rgba_linear,
 	drawable::Lines,
+	root::FrameInfo,
 	spatial::{Spatial, SpatialAspect, Transform},
 };
 use stardust_xr_molecules::lines::{circle, LineExt};
@@ -47,19 +47,19 @@ impl Ring {
 		};
 		Ring { lines, state }
 	}
-	pub fn logic_step(&mut self, info: FrameInfo) -> &State {
+	pub fn logic_step(&mut self, info: &FrameInfo) -> &State {
 		match &mut self.state {
 			State::Rezzing {
 				rez_height_tweener,
 				rez_scale_tweener,
 			} => {
 				if !rez_height_tweener.is_finished() {
-					let height = rez_height_tweener.move_by(info.delta);
+					let height = rez_height_tweener.move_by(info.delta.into());
 					let _ = self
 						.lines
 						.set_local_transform(Transform::from_translation([0.0, height, 0.0]));
 				} else if !rez_scale_tweener.is_finished() {
-					let scale = rez_scale_tweener.move_by(info.delta);
+					let scale = rez_scale_tweener.move_by(info.delta.into());
 					let _ = self
 						.lines
 						.set_local_transform(Transform::from_scale([scale; 3]));
