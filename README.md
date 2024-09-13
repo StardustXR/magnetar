@@ -1,2 +1,2 @@
 # magnetar
-Workspaces client for Stardust, now blazingly fast in rust
+Workspaces client for Stardust XR, now blazingly fast in rust
